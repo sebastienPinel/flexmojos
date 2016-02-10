@@ -38,10 +38,11 @@ import org.apache.maven.project.ProjectBuilder;
 import org.apache.maven.project.ProjectBuildingException;
 import org.apache.maven.project.ProjectBuildingRequest;
 import org.codehaus.plexus.util.FileUtils;
+
+import net.flexmojos.oss.compatibilitykit.MavenCompatiblityHelper;
 import net.flexmojos.oss.plugin.AbstractMavenMojo;
 import net.flexmojos.oss.plugin.utilities.FileInterpolationUtil;
 import net.flexmojos.oss.plugin.utilities.MavenUtils;
-
 import eu.cedarsoft.utils.ZipExtractor;
 
 /**
@@ -272,6 +273,13 @@ public class HtmlWrapperMojo
      * @parameter
      */
     private Map<String, String> wrapperArtifact;
+    
+    /**
+     * Compatibility component to help with aether api incompatibility between maven 3.0 and 3.1.
+     * @component
+     * @required
+     */
+    private MavenCompatiblityHelper compatibilityHelper;
 
     private Artifact convertToArtifact( Dependency dependency )
     {
@@ -651,12 +659,9 @@ public class HtmlWrapperMojo
     {
         try
         {
-            ProjectBuildingRequest request = new DefaultProjectBuildingRequest();
-            request.setLocalRepository( localRepository );
-            request.setRemoteRepositories( remoteRepositories );
-            request.setResolveDependencies( true );
-            request.setRepositorySession( session.getRepositorySession() );
-            return projectBuilder.build( artifact, request ).getProject();
+            return projectBuilder.build( artifact, 
+                compatibilityHelper.getProjectBuildingRequest( session, localRepository, remoteRepositories ) )
+                .getProject();
         }
         catch ( ProjectBuildingException ex )
         {

@@ -38,6 +38,8 @@ import org.apache.maven.project.ProjectBuildingException;
 import org.apache.maven.project.ProjectBuildingRequest;
 import org.codehaus.plexus.util.FileUtils;
 import org.codehaus.plexus.util.StringUtils;
+
+import net.flexmojos.oss.compatibilitykit.MavenCompatiblityHelper;
 import net.flexmojos.oss.plugin.AbstractMavenMojo;
 import net.flexmojos.oss.plugin.common.FlexExtension;
 import net.flexmojos.oss.plugin.common.FlexScopes;
@@ -109,6 +111,13 @@ public class CopyMojo
      */
     private File webappDirectory;
 
+    /**
+     * Compatibility component to help with aether api incompatibility between maven 3.0 and 3.1.
+     * @component
+     * @required
+     */
+    private MavenCompatiblityHelper compatibilityHelper;
+    
     private void copy( File sourceFile, File destFile )
         throws MojoExecutionException
     {
@@ -253,16 +262,13 @@ public class CopyMojo
     {
         try
         {
-            ProjectBuildingRequest request = new DefaultProjectBuildingRequest();
-            request.setLocalRepository( localRepository );
-            request.setRemoteRepositories( remoteRepositories );
-            request.setResolveDependencies( true );
+            ProjectBuildingRequest request = 
+                compatibilityHelper.getProjectBuildingRequest( session, localRepository, remoteRepositories );
             ArrayList<String> ids = new ArrayList<String>();
-            for(Profile profile : project.getActiveProfiles()){
-            	ids.add(profile.getId());
+            for ( Profile profile : project.getActiveProfiles() ){
+            	ids.add( profile.getId() );
             }
             request.setActiveProfileIds(ids);
-            request.setRepositorySession( session.getRepositorySession() );
             return projectBuilder.build( artifact, request ).getProject();
         }
         catch ( ProjectBuildingException e )

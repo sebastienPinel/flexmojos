@@ -46,7 +46,9 @@ import org.apache.maven.project.ProjectBuildingRequest;
 import org.codehaus.plexus.archiver.Archiver;
 import org.codehaus.plexus.archiver.UnArchiver;
 import org.hamcrest.Matcher;
+
 import net.flexmojos.oss.compatibilitykit.FlexCompatibility;
+import net.flexmojos.oss.compatibilitykit.MavenCompatiblityHelper;
 import net.flexmojos.oss.compiler.IASDocConfiguration;
 import net.flexmojos.oss.compiler.IPackagesConfiguration;
 import net.flexmojos.oss.compiler.IRuntimeSharedLibraryPath;
@@ -315,6 +317,13 @@ public class AsdocMojo
      * @parameter default-value="${project.name} Documentation" expression="${flex.windowTitle}"
      */
     private String windowTitle;
+    
+    /**
+     * Compatibility component to help with aether api incompatibility between maven 3.0 and 3.1.
+     * @component
+     * @required
+     */
+    private MavenCompatiblityHelper compatibilityHelper;
 
     private void attachAsdoc()
         throws Exception
@@ -496,14 +505,14 @@ public class AsdocMojo
                     continue;
                 }
 
-                ProjectBuildingRequest request = new DefaultProjectBuildingRequest();
-                request.setLocalRepository( localRepository );
-                request.setRemoteRepositories( remoteRepositories );
-                request.setResolveDependencies( true );
-                request.setRepositorySession( session.getRepositorySession() );
                 try
                 {
-                    p = projectBuilder.build( p.getArtifact(), request ).getProject();
+                    p =
+                        projectBuilder
+                            .build(
+                                p.getArtifact(),
+                                compatibilityHelper.getProjectBuildingRequest( session, localRepository,
+                                    remoteRepositories ) ).getProject();
                 }
                 catch ( ProjectBuildingException e )
                 {
