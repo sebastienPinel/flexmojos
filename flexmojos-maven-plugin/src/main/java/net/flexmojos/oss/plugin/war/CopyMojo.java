@@ -48,6 +48,7 @@ import net.flexmojos.oss.compatibilitykit.MavenCompatiblityHelper;
 import net.flexmojos.oss.plugin.AbstractMavenMojo;
 import net.flexmojos.oss.plugin.common.FlexExtension;
 import net.flexmojos.oss.plugin.common.FlexScopes;
+import net.flexmojos.oss.plugin.compiler.attributes.MavenRuntimeException;
 import net.flexmojos.oss.plugin.utilities.CompileConfigurationLoader;
 import net.flexmojos.oss.plugin.utilities.MavenUtils;
 
@@ -262,11 +263,18 @@ public class CopyMojo
         File sourceFile = new File( sourceDirectory, filenameWithoutExtension + ".swc" );
         if ( sourceFile.exists() )
         {
-            UnArchiver unarchive = archiverManager.getUnArchiver( sourceFile );
-            unarchive.setSourceFile( sourceFile );
-            unarchive.setDestDirectory( sourceDirectory );
-            unarchive.extract();
-            sourceFile = new File( sourceDirectory, "library.swf" );
+            try
+            {
+                UnArchiver unarchive = archiverManager.getUnArchiver( sourceFile );
+                unarchive.setSourceFile( sourceFile );
+                unarchive.setDestDirectory( sourceDirectory );
+                unarchive.extract();
+                sourceFile = new File( sourceDirectory, "library.swf" );
+            }
+            catch ( Exception e )
+            {
+                throw new MavenRuntimeException( "Failed to extract " + sourceFile, e );
+            }
         }
         else
         {
