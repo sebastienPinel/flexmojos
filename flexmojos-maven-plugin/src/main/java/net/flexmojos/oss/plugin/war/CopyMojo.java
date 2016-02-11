@@ -30,17 +30,25 @@ import java.util.Set;
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
+import org.apache.maven.plugin.PluginParameterExpressionEvaluator;
 import org.apache.maven.project.DefaultProjectBuildingRequest;
 import org.apache.maven.project.MavenProject;
+import org.apache.maven.model.Plugin;
 import org.apache.maven.model.Profile;
 import org.apache.maven.project.ProjectBuilder;
 import org.apache.maven.project.ProjectBuildingException;
 import org.apache.maven.project.ProjectBuildingRequest;
+import org.codehaus.plexus.archiver.UnArchiver;
+import org.codehaus.plexus.archiver.manager.ArchiverManager;
 import org.codehaus.plexus.util.FileUtils;
 import org.codehaus.plexus.util.StringUtils;
+import org.codehaus.plexus.util.xml.Xpp3Dom;
+
+import net.flexmojos.oss.compatibilitykit.MavenCompatiblityHelper;
 import net.flexmojos.oss.plugin.AbstractMavenMojo;
 import net.flexmojos.oss.plugin.common.FlexExtension;
 import net.flexmojos.oss.plugin.common.FlexScopes;
+import net.flexmojos.oss.plugin.compiler.attributes.MavenRuntimeException;
 import net.flexmojos.oss.plugin.utilities.CompileConfigurationLoader;
 import net.flexmojos.oss.plugin.utilities.MavenUtils;
 
@@ -108,6 +116,19 @@ public class CopyMojo
      * @required
      */
     private File webappDirectory;
+    
+    /**
+     * Compatibility component to help with aether api incompatibility between maven 3.0 and 3.1.
+     * @component
+     * @required
+     */
+    private MavenCompatiblityHelper compatibilityHelper;
+    
+    /**
+     * @component
+     * @readonly
+     */
+    protected ArchiverManager archiverManager;
 
     private void copy( File sourceFile, File destFile )
         throws MojoExecutionException
@@ -147,6 +168,25 @@ public class CopyMojo
             File sourceFile = artifact.getFile();
             File destFile = getDestinationFile( artifact );
 
+            if (sourceFile.isDirectory())
+            {
+                MavenProject projectDependency = getProject( artifact );
+                List<Plugin> buildPlugins = projectDependency.getBuildPlugins();
+                for ( Plugin plugin : buildPlugins )
+                {
+                    if ( "flexmojos-maven-plugin".equals( plugin.getArtifactId() ) )
+                    {
+                        Xpp3Dom originalConfiguration = ( Xpp3Dom ) plugin.getConfiguration();
+                        PluginParameterExpressionEvaluator evaluator = 
+                            new PluginParameterExpressionEvaluator( session );
+                        String sourceFileName = evaluate( originalConfiguration, evaluator, "sourceFile" );
+                        String filenameWithoutExtension =
+                            FileUtils.removeExtension( FileUtils.removePath( sourceFileName, '/' ) );
+                        sourceFile = getFileFromDirectory( sourceFile, filenameWithoutExtension );
+                    }
+                }
+            }
+            
             copy( sourceFile, destFile );
             if ( copyRSL || copyRuntimeLocales )
             {
@@ -164,6 +204,62 @@ public class CopyMojo
             copy( sourceFile, destFile );
         }
 
+    }
+    
+    /**
+     * Short-hand method for evaluating a configuration value.
+     * @return the configuration value if defined, or the default value if not.
+     */
+    private String evaluate( Xpp3Dom configuration, PluginParameterExpressionEvaluator evaluator, final String name )
+    {
+        try
+        {
+            final Xpp3Dom child = configuration.getChild( name );
+            if ( child.getValue() != null )
+            {
+                return ( String ) evaluator.evaluate( child.getValue() );
+            }
+            else
+            {
+                return ( String ) evaluator.evaluate( child.getAttribute( "default-value" ) );
+            }
+        }
+        catch ( final Exception e )
+        {
+            return null;
+        }
+    }
+    
+    /**
+     * In case we have a directory instead of a file (e.g. Eclipse hot deploy), we search for the result file inside the
+     * directory
+     * @param sourceDirectory
+     * @return
+     */
+    private File getFileFromDirectory( File sourceDirectory, String filenameWithoutExtension )
+    {
+        File sourceFile = new File( sourceDirectory, filenameWithoutExtension + ".swc" );
+        if ( sourceFile.exists() )
+        {
+            try
+            {
+                UnArchiver unarchive = archiverManager.getUnArchiver( sourceFile );
+                unarchive.setSourceFile( sourceFile );
+                unarchive.setDestDirectory( sourceDirectory );
+                unarchive.extract();
+                sourceFile = new File( sourceDirectory, "library.swf" );
+            }
+            catch ( Exception e )
+            {
+                throw new MavenRuntimeException( "Failed to extract " + sourceFile, e );
+            }
+        }
+        else
+        {
+            sourceFile = new File( sourceDirectory, filenameWithoutExtension + ".swf" );
+        }
+
+        return sourceFile;
     }
 
     private List<Artifact> getAirArtifacts()
