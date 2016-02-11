@@ -329,16 +329,14 @@ public class CopyMojo
     {
         try
         {
-            ProjectBuildingRequest request = new DefaultProjectBuildingRequest();
-            request.setLocalRepository( localRepository );
-            request.setRemoteRepositories( remoteRepositories );
-            request.setResolveDependencies( true );
+            ProjectBuildingRequest request = 
+                compatibilityHelper.getProjectBuildingRequest( session, localRepository, remoteRepositories );
             ArrayList<String> ids = new ArrayList<String>();
-            for(Profile profile : project.getActiveProfiles()){
-            	ids.add(profile.getId());
+            for ( Profile profile : project.getActiveProfiles() )
+            {
+            	ids.add( profile.getId() );
             }
-            request.setActiveProfileIds(ids);
-            request.setRepositorySession( session.getRepositorySession() );
+            request.setActiveProfileIds( ids );
             return projectBuilder.build( artifact, request ).getProject();
         }
         catch ( ProjectBuildingException e )
