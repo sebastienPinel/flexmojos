@@ -312,9 +312,11 @@ public class CopyMojo
             }
         }
 
-        if ( stripVersion && fileName.contains( artifact.getVersion() ) )
+        if ( stripVersion && fileName.contains( artifact.getVersion() )
+            || fileName.contains( artifact.getBaseVersion() ) )
         {
-            fileName = fileName.replace( "-" + artifact.getVersion(), "" );
+            fileName = fileName.replace( "-" + artifact.getVersion(), "" )
+                .replace( "-" + artifact.getBaseVersion(), "" );
         }
 
         File destFile = new File( webappDirectory, fileName );
