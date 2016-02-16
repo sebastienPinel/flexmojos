@@ -129,19 +129,19 @@ public class CopyMojo
      */
     protected ArchiverManager archiverManager;
 
-    private void copy(File sourceFile, File destFile)
+    private void copy( File sourceFile, File destFile )
         throws MojoExecutionException
     {
         try
         {
-            if (!overrideIfSame && !isSameFile(sourceFile, destFile) || overrideIfSame)
+            if ( !overrideIfSame && !isSameFile( sourceFile, destFile ) || overrideIfSame )
             {
-                FileUtils.copyFile(sourceFile, destFile);
+                FileUtils.copyFile( sourceFile, destFile );
             }
         }
-        catch (IOException e)
+        catch ( IOException e )
         {
-            throw new MojoExecutionException("Failed to copy " + sourceFile, e);
+            throw new MojoExecutionException( "Failed to copy " + sourceFile, e );
         }
     }
 
@@ -150,17 +150,17 @@ public class CopyMojo
      * @param destFile
      * @return
      */
-    private boolean isSameFile(File sourceFile, File destFile)
+    private boolean isSameFile( File sourceFile, File destFile )
     {
-        if (!destFile.exists())
+        if ( !destFile.exists() )
         {
             return false;
         }
         try
         {
-            return FileUtils.contentEquals(sourceFile, destFile);
+            return FileUtils.contentEquals( sourceFile, destFile );
         }
-        catch (IOException e)
+        catch ( IOException e )
         {
             return false;
         }
@@ -170,74 +170,74 @@ public class CopyMojo
     public void execute()
         throws MojoExecutionException, MojoFailureException
     {
-        if (skip)
+        if ( skip )
         {
-            getLog().info("Skipping copy-mojo execution");
+            getLog().info( "Skipping copy-mojo execution" );
             return;
         }
 
         String packaging = project.getPackaging();
 
-        if (!"war".equals(packaging))
+        if ( !"war".equals( packaging ) )
         {
-            getLog().warn("'copy-flex-resources' was intended to run on war project");
+            getLog().warn( "'copy-flex-resources' was intended to run on war project" );
         }
 
         webappDirectory.mkdirs();
 
         List<Artifact> swfDependencies = getSwfArtifacts();
 
-        for (Artifact artifact : swfDependencies)
+        for ( Artifact artifact : swfDependencies )
         {
             File sourceFile = artifact.getFile();
-            File destFile = getDestinationFile(artifact);
+            File destFile = getDestinationFile( artifact );
 
-            getLog().warn(sourceFile.getAbsolutePath() + " : " + sourceFile.isDirectory());
-            if (sourceFile.isDirectory())
+            getLog().warn( sourceFile.getAbsolutePath() + " : " + sourceFile.isDirectory() );
+            if ( sourceFile.isDirectory() )
             {
-                sourceFile = getFileFromDirectory(artifact, sourceFile);
+                sourceFile = getFileFromDirectory( artifact, sourceFile );
             }
 
-            copy(sourceFile, destFile);
-            if (copyRSL || copyRuntimeLocales)
+            copy( sourceFile, destFile );
+            if ( copyRSL || copyRuntimeLocales )
             {
-                performSubArtifactsCopy(artifact);
+                performSubArtifactsCopy( artifact );
             }
         }
 
         List<Artifact> airDependencies = getAirArtifacts();
 
-        for (Artifact artifact : airDependencies)
+        for ( Artifact artifact : airDependencies )
         {
             File sourceFile = artifact.getFile();
-            File destFile = getDestinationFile(artifact);
+            File destFile = getDestinationFile( artifact );
 
-            copy(sourceFile, destFile);
+            copy( sourceFile, destFile );
         }
 
     }
 
-    private File getFileFromDirectory(Artifact artifact, File sourceFile)
+    private File getFileFromDirectory( Artifact artifact, File sourceFile )
         throws MojoExecutionException
     {
-        MavenProject projectDependency = getProject(artifact);
-        if ("swc".equals(projectDependency.getPackaging()))
+        MavenProject projectDependency = getProject( artifact );
+        if ( "swc".equals( projectDependency.getPackaging() ) )
         {
-            sourceFile = getFile(sourceFile, artifact.getArtifactId());
+            sourceFile = getFile( sourceFile, artifact.getArtifactId() );
         }
         else
         {
             List<Plugin> buildPlugins = projectDependency.getBuildPlugins();
-            for (Plugin plugin : buildPlugins)
+            for ( Plugin plugin : buildPlugins )
             {
-                if ("flexmojos-maven-plugin".equals(plugin.getArtifactId()))
+                if ( "flexmojos-maven-plugin".equals( plugin.getArtifactId() ) )
                 {
-                    Xpp3Dom originalConfiguration = (Xpp3Dom) plugin.getConfiguration();
-                    PluginParameterExpressionEvaluator evaluator = new PluginParameterExpressionEvaluator(session);
-                    String sourceFileName = evaluate(originalConfiguration, evaluator, "sourceFile");
+                    Xpp3Dom originalConfiguration = ( Xpp3Dom ) plugin.getConfiguration();
+                    PluginParameterExpressionEvaluator evaluator = new PluginParameterExpressionEvaluator( session );
+                    String sourceFileName = evaluate( originalConfiguration, evaluator, "sourceFile" );
                     String filenameWithoutExtension =
-                        FileUtils.removeExtension(FileUtils.removePath(sourceFileName, '/'));
-                    sourceFile = getFile(sourceFile, filenameWithoutExtension);
+                        FileUtils.removeExtension( FileUtils.removePath( sourceFileName, '/' ) );
+                    sourceFile = getFile( sourceFile, filenameWithoutExtension );
                 }
             }
         }
@@ -248,21 +248,21 @@ public class CopyMojo
      * Short-hand method for evaluating a configuration value.
      * @return the configuration value if defined, or the default value if not.
      */
-    private String evaluate(Xpp3Dom configuration, PluginParameterExpressionEvaluator evaluator, final String name)
+    private String evaluate( Xpp3Dom configuration, PluginParameterExpressionEvaluator evaluator, final String name )
     {
         try
         {
-            final Xpp3Dom child = configuration.getChild(name);
-            if (child.getValue() != null)
+            final Xpp3Dom child = configuration.getChild( name );
+            if ( child.getValue() != null )
             {
-                return (String) evaluator.evaluate(child.getValue());
+                return ( String ) evaluator.evaluate( child.getValue() );
             }
             else
             {
-                return (String) evaluator.evaluate(child.getAttribute("default-value"));
+                return ( String ) evaluator.evaluate( child.getAttribute( "default-value" ) );
             }
         }
-        catch (final Exception e)
+        catch ( final Exception e )
         {
             return null;
         }
@@ -274,27 +274,27 @@ public class CopyMojo
      * @param sourceDirectory
      * @return
      */
-    private File getFile(File sourceDirectory, String filenameWithoutExtension)
+    private File getFile( File sourceDirectory, String filenameWithoutExtension )
     {
-        File sourceFile = new File(sourceDirectory, filenameWithoutExtension + ".swc");
-        if (sourceFile.exists())
+        File sourceFile = new File( sourceDirectory, filenameWithoutExtension + ".swc" );
+        if ( sourceFile.exists() )
         {
             try
             {
-                UnArchiver unarchive = archiverManager.getUnArchiver(sourceFile);
-                unarchive.setSourceFile(sourceFile);
-                unarchive.setDestDirectory(sourceDirectory);
+                UnArchiver unarchive = archiverManager.getUnArchiver( sourceFile );
+                unarchive.setSourceFile( sourceFile );
+                unarchive.setDestDirectory( sourceDirectory );
                 unarchive.extract();
-                sourceFile = new File(sourceDirectory, "library.swf");
+                sourceFile = new File( sourceDirectory, "library.swf" );
             }
-            catch (Exception e)
+            catch ( Exception e )
             {
-                throw new MavenRuntimeException("Failed to extract " + sourceFile, e);
+                throw new MavenRuntimeException( "Failed to extract " + sourceFile, e );
             }
         }
         else
         {
-            sourceFile = new File(sourceDirectory, filenameWithoutExtension + ".swf");
+            sourceFile = new File( sourceDirectory, filenameWithoutExtension + ".swf" );
         }
 
         return sourceFile;
@@ -302,32 +302,32 @@ public class CopyMojo
 
     private List<Artifact> getAirArtifacts()
     {
-        return getArtifacts(AIR, project);
+        return getArtifacts( AIR, project );
     }
 
-    private List<Artifact> getArtifacts(String type, MavenProject project)
+    private List<Artifact> getArtifacts( String type, MavenProject project )
     {
         List<Artifact> swfArtifacts = new ArrayList<Artifact>();
         Set<Artifact> artifacts = project.getArtifacts();
-        for (Artifact artifact : artifacts)
+        for ( Artifact artifact : artifacts )
         {
-            if (type.equals(artifact.getType()))
+            if ( type.equals( artifact.getType() ) )
             {
-                swfArtifacts.add(artifact);
+                swfArtifacts.add( artifact );
             }
         }
         return swfArtifacts;
     }
 
-    private File getDestinationFile(Artifact artifact)
+    private File getDestinationFile( Artifact artifact )
         throws MojoExecutionException
     {
-        boolean isModule = !StringUtils.isEmpty(artifact.getClassifier());
-        MavenProject pomProject = getProject(artifact);
+        boolean isModule = !StringUtils.isEmpty( artifact.getClassifier() );
+        MavenProject pomProject = getProject( artifact );
         String fileName;
-        if (isModule)
+        if ( isModule )
         {
-            if (!stripModuleArtifactInfo)
+            if ( !stripModuleArtifactInfo )
             {
                 fileName =
                     artifact.getArtifactId() + "-" + artifact.getVersion() + "-" + artifact.getClassifier() + "."
@@ -340,7 +340,7 @@ public class CopyMojo
         }
         else
         {
-            if (!useFinalName)
+            if ( !useFinalName )
             {
                 fileName = artifact.getArtifactId() + "-" + artifact.getVersion() + "." + artifact.getType();
             }
@@ -350,45 +350,47 @@ public class CopyMojo
             }
         }
 
-        if (stripVersion && fileName.contains(artifact.getVersion()) || fileName.contains(artifact.getBaseVersion()))
+        if ( stripVersion && fileName.contains( artifact.getVersion() )
+            || fileName.contains( artifact.getBaseVersion() ) )
         {
-            fileName = fileName.replace("-" + artifact.getVersion(), "").replace("-" + artifact.getBaseVersion(), "");
+            fileName =
+                fileName.replace( "-" + artifact.getVersion(), "" ).replace( "-" + artifact.getBaseVersion(), "" );
         }
 
-        File destFile = new File(webappDirectory, fileName);
+        File destFile = new File( webappDirectory, fileName );
 
         return destFile;
     }
 
-    private MavenProject getProject(Artifact artifact)
+    private MavenProject getProject( Artifact artifact )
         throws MojoExecutionException
     {
         try
         {
             ProjectBuildingRequest request =
-                compatibilityHelper.getProjectBuildingRequest(session, localRepository, remoteRepositories);
+                compatibilityHelper.getProjectBuildingRequest( session, localRepository, remoteRepositories );
             ArrayList<String> ids = new ArrayList<String>();
-            for (Profile profile : project.getActiveProfiles())
+            for ( Profile profile : project.getActiveProfiles() )
             {
-                ids.add(profile.getId());
+                ids.add( profile.getId() );
             }
-            request.setActiveProfileIds(ids);
-            return projectBuilder.build(artifact, request).getProject();
+            request.setActiveProfileIds( ids );
+            return projectBuilder.build( artifact, request ).getProject();
         }
-        catch (ProjectBuildingException e)
+        catch ( ProjectBuildingException e )
         {
-            getLog().warn("Failed to retrieve pom for " + artifact);
+            getLog().warn( "Failed to retrieve pom for " + artifact );
             return null;
         }
     }
 
-    private List<Artifact> getRSLDependencies(MavenProject artifactProject)
+    private List<Artifact> getRSLDependencies( MavenProject artifactProject )
     {
-        List<Artifact> swcDeps = getArtifacts(SWC, artifactProject);
-        for (Iterator<Artifact> iterator = swcDeps.iterator(); iterator.hasNext();)
+        List<Artifact> swcDeps = getArtifacts( SWC, artifactProject );
+        for ( Iterator<Artifact> iterator = swcDeps.iterator(); iterator.hasNext(); )
         {
             Artifact artifact = iterator.next();
-            if (!(RSL.equals(artifact.getScope()) || CACHING.equals(artifact.getScope())))
+            if ( !( RSL.equals( artifact.getScope() ) || CACHING.equals( artifact.getScope() ) ) )
             {
                 iterator.remove();
             }
@@ -396,66 +398,66 @@ public class CopyMojo
         return swcDeps;
     }
 
-    private String getLastRslUrls(MavenProject artifactProject)
+    private String getLastRslUrls( MavenProject artifactProject )
     {
-        String[] urls = CompileConfigurationLoader.getCompilerPluginSettings(artifactProject, "rslUrls");
-        if (urls == null || urls.length == 0)
+        String[] urls = CompileConfigurationLoader.getCompilerPluginSettings( artifactProject, "rslUrls" );
+        if ( urls == null || urls.length == 0 )
         {
             urls = AbstractMavenMojo.DEFAULT_RSL_URLS;
         }
         return urls[urls.length - 1];
     }
 
-    private String getRuntimeLocaleOutputPath(MavenProject artifactProject)
+    private String getRuntimeLocaleOutputPath( MavenProject artifactProject )
     {
         String runtimeLocaleOutputPath =
-            CompileConfigurationLoader.getCompilerPluginSetting(artifactProject, "runtimeLocaleOutputPath");
-        if (runtimeLocaleOutputPath == null)
+            CompileConfigurationLoader.getCompilerPluginSetting( artifactProject, "runtimeLocaleOutputPath" );
+        if ( runtimeLocaleOutputPath == null )
         {
             runtimeLocaleOutputPath = AbstractMavenMojo.DEFAULT_RUNTIME_LOCALE_OUTPUT_PATH;
         }
         return runtimeLocaleOutputPath;
     }
 
-    private List<Artifact> getRuntimeLocalesDependencies(MavenProject artifactProject)
+    private List<Artifact> getRuntimeLocalesDependencies( MavenProject artifactProject )
     {
         String[] runtimeLocales =
-            CompileConfigurationLoader.getCompilerPluginSettings(artifactProject, "runtimeLocales");
-        if (runtimeLocales == null || runtimeLocales.length == 0)
+            CompileConfigurationLoader.getCompilerPluginSettings( artifactProject, "runtimeLocales" );
+        if ( runtimeLocales == null || runtimeLocales.length == 0 )
         {
             return Collections.emptyList();
         }
 
         List<Artifact> artifacts = new ArrayList<Artifact>();
-        for (String locale : runtimeLocales)
+        for ( String locale : runtimeLocales )
         {
-            artifacts.add(repositorySystem.createArtifactWithClassifier(artifactProject.getGroupId(),
-                artifactProject.getArtifactId(), artifactProject.getVersion(), SWF, locale));
+            artifacts.add( repositorySystem.createArtifactWithClassifier( artifactProject.getGroupId(),
+                artifactProject.getArtifactId(), artifactProject.getVersion(), SWF, locale ) );
         }
         return artifacts;
     }
 
     private List<Artifact> getSwfArtifacts()
     {
-        return getArtifacts(SWF, project);
+        return getArtifacts( SWF, project );
     }
 
-    private void performRslCopy(MavenProject artifactProject)
+    private void performRslCopy( MavenProject artifactProject )
         throws MojoExecutionException
     {
-        List<Artifact> rslDeps = getRSLDependencies(artifactProject);
+        List<Artifact> rslDeps = getRSLDependencies( artifactProject );
 
-        if (rslDeps.isEmpty())
+        if ( rslDeps.isEmpty() )
         {
             return;
         }
 
-        String rslUrls = getLastRslUrls(artifactProject);
+        String rslUrls = getLastRslUrls( artifactProject );
 
-        for (Artifact rslArtifact : rslDeps)
+        for ( Artifact rslArtifact : rslDeps )
         {
             String extension;
-            if (RSL.equals(rslArtifact.getScope()))
+            if ( RSL.equals( rslArtifact.getScope() ) )
             {
                 extension = SWF;
             }
@@ -465,62 +467,62 @@ public class CopyMojo
             }
 
             rslArtifact =
-                repositorySystem.createArtifactWithClassifier(rslArtifact.getGroupId(), rslArtifact.getArtifactId(),
-                    rslArtifact.getVersion(), extension, rslArtifact.getClassifier());
-            rslArtifact = replaceWithResolvedArtifact(rslArtifact);
+                repositorySystem.createArtifactWithClassifier( rslArtifact.getGroupId(), rslArtifact.getArtifactId(),
+                    rslArtifact.getVersion(), extension, rslArtifact.getClassifier() );
+            rslArtifact = replaceWithResolvedArtifact( rslArtifact );
 
-            File destFile = resolveRslDestination(rslUrls, rslArtifact, extension);
+            File destFile = resolveRslDestination( rslUrls, rslArtifact, extension );
             File sourceFile = rslArtifact.getFile();
-            if (sourceFile.isDirectory())
+            if ( sourceFile.isDirectory() )
             {
-                sourceFile = getFileFromDirectory(rslArtifact, sourceFile);
+                sourceFile = getFileFromDirectory( rslArtifact, sourceFile );
             }
-            copy(sourceFile, destFile);
+            copy( sourceFile, destFile );
         }
     }
 
-    private void performRuntimeLocalesCopy(MavenProject artifactProject)
+    private void performRuntimeLocalesCopy( MavenProject artifactProject )
         throws MojoExecutionException
     {
-        List<Artifact> deps = getRuntimeLocalesDependencies(artifactProject);
+        List<Artifact> deps = getRuntimeLocalesDependencies( artifactProject );
 
-        if (deps.isEmpty())
+        if ( deps.isEmpty() )
         {
             return;
         }
 
-        String runtimeLocaleOutputPath = getRuntimeLocaleOutputPath(artifactProject);
+        String runtimeLocaleOutputPath = getRuntimeLocaleOutputPath( artifactProject );
 
-        for (Artifact artifact : deps)
+        for ( Artifact artifact : deps )
         {
-            artifact = replaceWithResolvedArtifact(artifact);
-            copy(artifact.getFile(), resolveRuntimeLocaleDestination(runtimeLocaleOutputPath, artifact));
+            artifact = replaceWithResolvedArtifact( artifact );
+            copy( artifact.getFile(), resolveRuntimeLocaleDestination( runtimeLocaleOutputPath, artifact ) );
         }
     }
 
-    private void performSubArtifactsCopy(Artifact artifact)
+    private void performSubArtifactsCopy( Artifact artifact )
         throws MojoExecutionException
     {
-        MavenProject artifactProject = getProject(artifact);
-        if (artifactProject != null)
+        MavenProject artifactProject = getProject( artifact );
+        if ( artifactProject != null )
         {
-            if (copyRSL)
+            if ( copyRSL )
             {
-                performRslCopy(artifactProject);
+                performRslCopy( artifactProject );
             }
-            if (copyRuntimeLocales)
+            if ( copyRuntimeLocales )
             {
-                performRuntimeLocalesCopy(artifactProject);
+                performRuntimeLocalesCopy( artifactProject );
             }
         }
     }
 
-    private String replaceContextRoot(String sample)
+    private String replaceContextRoot( String sample )
     {
         String absoluteWebappPath = webappDirectory.getAbsolutePath();
-        if (sample.contains("/{contextRoot}"))
+        if ( sample.contains( "/{contextRoot}" ) )
         {
-            sample = sample.replace("/{contextRoot}", absoluteWebappPath);
+            sample = sample.replace( "/{contextRoot}", absoluteWebappPath );
         }
         else
         {
@@ -530,26 +532,26 @@ public class CopyMojo
         return sample;
     }
 
-    private Artifact replaceWithResolvedArtifact(Artifact artifact)
+    private Artifact replaceWithResolvedArtifact( Artifact artifact )
         throws MojoExecutionException
     {
-        return resolve(artifact.getGroupId(), artifact.getArtifactId(), artifact.getVersion(),
-            artifact.getClassifier(), artifact.getType());
+        return resolve( artifact.getGroupId(), artifact.getArtifactId(), artifact.getVersion(),
+            artifact.getClassifier(), artifact.getType() );
     }
 
-    private File resolveRslDestination(String rsl, Artifact artifact, String extension)
+    private File resolveRslDestination( String rsl, Artifact artifact, String extension )
     {
-        rsl = replaceContextRoot(rsl);
-        rsl = MavenUtils.interpolateRslUrl(rsl, artifact, extension, null);
-        return file(rsl);
+        rsl = replaceContextRoot( rsl );
+        rsl = MavenUtils.interpolateRslUrl( rsl, artifact, extension, null );
+        return file( rsl );
     }
 
-    private File resolveRuntimeLocaleDestination(String runtimeLocaleOutputPath, Artifact artifact)
+    private File resolveRuntimeLocaleDestination( String runtimeLocaleOutputPath, Artifact artifact )
     {
-        String path = replaceContextRoot(runtimeLocaleOutputPath);
-        path = MavenUtils.getRuntimeLocaleOutputPath(path, artifact, artifact.getClassifier(), SWF);
+        String path = replaceContextRoot( runtimeLocaleOutputPath );
+        path = MavenUtils.getRuntimeLocaleOutputPath( path, artifact, artifact.getClassifier(), SWF );
 
-        return new File(path).getAbsoluteFile();
+        return new File( path ).getAbsoluteFile();
     }
 
 }
