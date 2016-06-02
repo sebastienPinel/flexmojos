@@ -17,7 +17,7 @@
  */
 package net.flexmojos.oss.plugin.war;
 
-import static net.flexmojos.oss.util.PathUtil.file;
+import static net.flexmojos.oss.util.PathUtil.*;
 
 import java.io.File;
 import java.io.IOException;
@@ -53,7 +53,7 @@ import net.flexmojos.oss.plugin.utilities.MavenUtils;
 
 /**
  * Goal to copy flex artifacts into war projects.
- * 
+ *
  * @author Marvin Herman Froeder (velo.br@gmail.com)
  * @since 3.0
  * @goal copy-flex-resources
@@ -82,42 +82,42 @@ public class CopyMojo
 
     /**
      * Skip mojo execution
-     * 
+     *
      * @parameter default-value="false" expression="${flexmojos.copy.skip}"
      */
     private boolean skip;
 
     /**
      * When true will strip artifact and version information from the built MXML module artifact.
-     * 
+     *
      * @parameter default-value="false"
      */
     private boolean stripModuleArtifactInfo;
 
     /**
      * Strip artifact version during copy
-     * 
+     *
      * @parameter default-value="false"
      */
     private boolean stripVersion;
 
     /**
      * Override file if exists and same
-     * 
+     *
      * @parameter default-value="false"
      */
     private boolean overrideIfSame;
 
     /**
      * Use final name if/when available
-     * 
+     *
      * @parameter default-value="true"
      */
     private boolean useFinalName;
 
     /**
      * The directory where the webapp is built.
-     * 
+     *
      * @parameter expression="${project.build.directory}/${project.build.finalName}"
      * @required
      */
@@ -125,7 +125,7 @@ public class CopyMojo
 
     /**
      * Compatibility component to help with aether api incompatibility between maven 3.0 and 3.1.
-     * 
+     *
      * @component
      * @required
      */
@@ -254,7 +254,7 @@ public class CopyMojo
 
     /**
      * Short-hand method for evaluating a configuration value.
-     * 
+     *
      * @return the configuration value if defined, or the default value if not.
      */
     private String evaluate( Xpp3Dom configuration, PluginParameterExpressionEvaluator evaluator, final String name )
@@ -280,7 +280,7 @@ public class CopyMojo
     /**
      * In case we have a directory instead of a file (e.g. Eclipse hot deploy), we search for the result file inside the
      * directory
-     * 
+     *
      * @param sourceDirectory
      * @return
      */
@@ -377,7 +377,7 @@ public class CopyMojo
     {
         try
         {
-            ProjectBuildingRequest request = 
+            ProjectBuildingRequest request =
                 compatibilityHelper.getProjectBuildingRequest( session, localRepository, remoteRepositories );
             ArrayList<String> ids = new ArrayList<String>();
             for ( Profile profile : project.getActiveProfiles() )
@@ -385,6 +385,7 @@ public class CopyMojo
                 ids.add( profile.getId() );
             }
             request.setActiveProfileIds( ids );
+            request.setSystemProperties( System.getProperties() );
             return projectBuilder.build( artifact, request ).getProject();
         }
         catch ( ProjectBuildingException e )
@@ -442,8 +443,7 @@ public class CopyMojo
         for ( String locale : runtimeLocales )
         {
             artifacts.add( repositorySystem.createArtifactWithClassifier( artifactProject.getGroupId(),
-                                                                          artifactProject.getArtifactId(),
-                                                                          artifactProject.getVersion(), SWF, locale ) );
+                artifactProject.getArtifactId(), artifactProject.getVersion(), SWF, locale ) );
         }
         return artifacts;
     }
@@ -479,7 +479,7 @@ public class CopyMojo
 
             rslArtifact =
                 repositorySystem.createArtifactWithClassifier( rslArtifact.getGroupId(), rslArtifact.getArtifactId(),
-                                                               rslArtifact.getVersion(), extension, rslArtifact.getClassifier() );
+                    rslArtifact.getVersion(), extension, rslArtifact.getClassifier() );
             rslArtifact = replaceWithResolvedArtifact( rslArtifact );
 
             File destFile = resolveRslDestination( rslUrls, rslArtifact, extension );
@@ -547,7 +547,7 @@ public class CopyMojo
         throws MojoExecutionException
     {
         return resolve( artifact.getGroupId(), artifact.getArtifactId(), artifact.getVersion(),
-                        artifact.getClassifier(), artifact.getType() );
+            artifact.getClassifier(), artifact.getType() );
     }
 
     private File resolveRslDestination( String rsl, Artifact artifact, String extension )
